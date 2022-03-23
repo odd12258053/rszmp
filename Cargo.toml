@@ -1,0 +1,8 @@
+[package]
+name = "rszmp"
+version = "0.1.0"
+edition = "2021"
+authors = ["odd <odd12258053@gmail.com>"]
+
+[dependencies]
+libc = "0.2.119"
