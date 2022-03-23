@@ -1,8 +1,10 @@
 use rszmp::{Context, Message, RecvFlag, SendFlag, SocketType};
+use uuid::Uuid;
 
 pub fn client(context: Context, addr: &str) {
     let mut socket = context.socket(SocketType::REQ);
-    socket.set_routing_id("client".as_bytes());
+    let client_id = Uuid::new_v4();
+    socket.set_routing_id(client_id.as_bytes());
     let rc = socket.connect(addr);
     assert_eq!(rc, 0);
 

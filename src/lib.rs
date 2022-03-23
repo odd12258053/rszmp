@@ -144,6 +144,14 @@ impl SendFlag {
     pub fn new() -> Self {
         Self(0)
     }
+    #[allow(non_snake_case)]
+    pub fn DONTWAIT() -> Self {
+        Self(ffi::ZMQ_DONTWAIT)
+    }
+    #[allow(non_snake_case)]
+    pub fn SNDMORE() -> Self {
+        Self(ffi::ZMQ_SNDMORE)
+    }
     pub fn dontwait(&self) -> Self {
         Self(self.0 | ffi::ZMQ_DONTWAIT)
     }
@@ -163,6 +171,10 @@ pub struct RecvFlag(i32);
 impl RecvFlag {
     pub fn new() -> Self {
         Self(0)
+    }
+    #[allow(non_snake_case)]
+    pub fn DONTWAIT() -> Self {
+        Self(ffi::ZMQ_DONTWAIT)
     }
     pub fn dontwait(&self) -> Self {
         Self(self.0 | ffi::ZMQ_DONTWAIT)

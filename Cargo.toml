@@ -6,3 +6,6 @@ authors = ["odd <odd12258053@gmail.com>"]
 
 [dependencies]
 libc = "0.2.119"
+
+[dev-dependencies]
+uuid = { version = "0.8.2", features = ["v4"] }

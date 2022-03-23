@@ -24,7 +24,7 @@ pub fn load_balancer(context: Context, addr1: &str, addr2: &str) {
             let worker_id = msg.as_bytes().unwrap().to_vec();
             println!("worker_id: {:?}, {}", worker_id, res);
             let res = backend.recv_msg(&mut msg, RecvFlag::new());
-            let empty = msg.as_str();
+            let empty = msg.as_bytes();
             println!("empty: {:?}, {}", empty, res);
             let res = backend.recv_msg(&mut msg, RecvFlag::new());
             let client_id = msg.as_bytes();
@@ -32,16 +32,17 @@ pub fn load_balancer(context: Context, addr1: &str, addr2: &str) {
             if let Some(b"READY") = client_id {
                 workers.push(worker_id);
             } else {
+                workers.push(worker_id);
                 let client_id = client_id.unwrap().to_vec();
                 let res = backend.recv_msg(&mut msg, RecvFlag::new());
-                let empty = msg.as_str();
+                let empty = msg.as_bytes();
                 println!("empty: {:?}, {}", empty, res);
                 let res = backend.recv_msg(&mut msg, RecvFlag::new());
-                let message = msg.as_str();
+                let message = msg.as_bytes();
                 println!("message: {:?}, {}", message, res);
-                frontend.send(client_id.as_slice(), SendFlag::new().sndmore());
-                frontend.send(&[], SendFlag::new().sndmore());
-                frontend.send(message.unwrap().as_bytes(), SendFlag::new());
+                frontend.send(client_id.as_slice(), SendFlag::SNDMORE());
+                frontend.send(&[], SendFlag::SNDMORE());
+                frontend.send(message.unwrap(), SendFlag::new());
             }
         }
         println!("revents1: {}", items[1].get_revents());
@@ -51,20 +52,20 @@ pub fn load_balancer(context: Context, addr1: &str, addr2: &str) {
             let client_id = msg.as_bytes().unwrap().to_vec();
             println!("client_id: {:?}, {}", client_id, res);
             let res = frontend.recv_msg(&mut msg, RecvFlag::new());
-            let empty = msg.as_str();
+            let empty = msg.as_bytes();
             println!("empty: {:?}, {}", empty, res);
             let res = frontend.recv_msg(&mut msg, RecvFlag::new());
-            let message = msg.as_str();
+            let message = msg.as_bytes();
             println!("message: {:?}, {}", message, res);
 
             let worker_id = workers.pop();
             println!("worker: {:?}", worker_id);
 
-            backend.send(worker_id.unwrap().as_slice(), SendFlag::new().sndmore());
-            backend.send(&[], SendFlag::new().sndmore());
-            backend.send(client_id.as_slice(), SendFlag::new().sndmore());
-            backend.send(&[], SendFlag::new().sndmore());
-            backend.send(message.unwrap().as_bytes(), SendFlag::new());
+            backend.send(worker_id.unwrap().as_slice(), SendFlag::SNDMORE());
+            backend.send(&[], SendFlag::SNDMORE());
+            backend.send(client_id.as_slice(), SendFlag::SNDMORE());
+            backend.send(&[], SendFlag::SNDMORE());
+            backend.send(message.unwrap(), SendFlag::new());
         }
     }
 }
