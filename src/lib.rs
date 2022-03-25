@@ -248,6 +248,274 @@ impl Socket {
             None
         }
     }
+
+    pub fn set_affinity(&mut self, value: u64) -> i32 {
+        unsafe {
+            ffi::zmq_setsockopt(
+                self.0,
+                ffi::ZMQ_AFFINITY,
+                value as *const c_void,
+                mem::size_of::<u64>(),
+            )
+        }
+    }
+
+    pub fn set_backlog(&mut self, value: i32) -> i32 {
+        unsafe {
+            ffi::zmq_setsockopt(
+                self.0,
+                ffi::ZMQ_BACKLOG,
+                value as *const c_void,
+                mem::size_of::<i32>(),
+            )
+        }
+    }
+
+    pub fn set_bindtodevice(&mut self, value: &str) -> i32 {
+        let bytes = value.as_bytes();
+        unsafe {
+            ffi::zmq_setsockopt(
+                self.0,
+                ffi::ZMQ_BINDTODEVICE,
+                bytes.as_ptr() as *const c_void,
+                bytes.len(),
+            )
+        }
+    }
+
+    pub fn set_connect_routing_id(&mut self, value: &[u8]) -> i32 {
+        unsafe {
+            ffi::zmq_setsockopt(
+                self.0,
+                ffi::ZMQ_CONNECT_ROUTING_ID,
+                value.as_ptr() as *const c_void,
+                value.len(),
+            )
+        }
+    }
+
+    pub fn set_conflate(&mut self, flag: bool) -> i32 {
+        unsafe {
+            ffi::zmq_setsockopt(
+                self.0,
+                ffi::ZMQ_CONFLATE,
+                flag as i32 as *const c_void,
+                mem::size_of::<i32>(),
+            )
+        }
+    }
+
+    pub fn set_connect_timeout(&mut self, value: i32) -> i32 {
+        unsafe {
+            ffi::zmq_setsockopt(
+                self.0,
+                ffi::ZMQ_CONNECT_TIMEOUT,
+                value as *const c_void,
+                mem::size_of::<i32>(),
+            )
+        }
+    }
+
+    pub fn set_curve_publickey(&mut self, value: &[u8]) -> i32 {
+        unsafe {
+            ffi::zmq_setsockopt(
+                self.0,
+                ffi::ZMQ_CURVE_PUBLICKEY,
+                value.as_ptr() as *const c_void,
+                value.len(),
+            )
+        }
+    }
+
+    pub fn set_curve_secretkey(&mut self, value: &[u8]) -> i32 {
+        unsafe {
+            ffi::zmq_setsockopt(
+                self.0,
+                ffi::ZMQ_CURVE_SECRETKEY,
+                value.as_ptr() as *const c_void,
+                value.len(),
+            )
+        }
+    }
+
+    pub fn set_curve_server(&mut self, flag: bool) -> i32 {
+        unsafe {
+            ffi::zmq_setsockopt(
+                self.0,
+                ffi::ZMQ_CURVE_SERVER,
+                flag as i32 as *const c_void,
+                mem::size_of::<i32>(),
+            )
+        }
+    }
+
+    pub fn set_curve_serverkey(&mut self, value: &[u8]) -> i32 {
+        unsafe {
+            ffi::zmq_setsockopt(
+                self.0,
+                ffi::ZMQ_CURVE_SERVERKEY,
+                value.as_ptr() as *const c_void,
+                value.len(),
+            )
+        }
+    }
+
+    pub fn set_gssapi_plaintext(&mut self, flag: bool) -> i32 {
+        unsafe {
+            ffi::zmq_setsockopt(
+                self.0,
+                ffi::ZMQ_GSSAPI_PLAINTEXT,
+                flag as i32 as *const c_void,
+                mem::size_of::<i32>(),
+            )
+        }
+    }
+
+    pub fn set_gssapi_principal(&mut self, value: &str) -> i32 {
+        let bytes = value.as_bytes();
+        unsafe {
+            ffi::zmq_setsockopt(
+                self.0,
+                ffi::ZMQ_GSSAPI_PRINCIPAL,
+                bytes.as_ptr() as *const c_void,
+                bytes.len(),
+            )
+        }
+    }
+
+    pub fn set_gssapi_server(&mut self, flag: bool) -> i32 {
+        unsafe {
+            ffi::zmq_setsockopt(
+                self.0,
+                ffi::ZMQ_GSSAPI_SERVER,
+                flag as i32 as *const c_void,
+                mem::size_of::<i32>(),
+            )
+        }
+    }
+
+    pub fn set_gssapi_service_principal(&mut self, value: &str) -> i32 {
+        let bytes = value.as_bytes();
+        unsafe {
+            ffi::zmq_setsockopt(
+                self.0,
+                ffi::ZMQ_GSSAPI_SERVICE_PRINCIPAL,
+                bytes.as_ptr() as *const c_void,
+                bytes.len(),
+            )
+        }
+    }
+
+    pub fn set_gssapi_service_principal_nametype(&mut self, value: i32) -> i32 {
+        unsafe {
+            ffi::zmq_setsockopt(
+                self.0,
+                ffi::ZMQ_GSSAPI_SERVICE_PRINCIPAL_NAMETYPE,
+                value as *const c_void,
+                mem::size_of::<i32>(),
+            )
+        }
+    }
+
+    pub fn set_gssapi_principal_nametype(&mut self, value: i32) -> i32 {
+        unsafe {
+            ffi::zmq_setsockopt(
+                self.0,
+                ffi::ZMQ_GSSAPI_PRINCIPAL_NAMETYPE,
+                value as *const c_void,
+                mem::size_of::<i32>(),
+            )
+        }
+    }
+
+    pub fn set_handshake_ivl(&mut self, value: i32) -> i32 {
+        unsafe {
+            ffi::zmq_setsockopt(
+                self.0,
+                ffi::ZMQ_HANDSHAKE_IVL,
+                value as *const c_void,
+                mem::size_of::<i32>(),
+            )
+        }
+    }
+
+    pub fn set_heartbeat_ivl(&mut self, value: i32) -> i32 {
+        unsafe {
+            ffi::zmq_setsockopt(
+                self.0,
+                ffi::ZMQ_HEARTBEAT_IVL,
+                value as *const c_void,
+                mem::size_of::<i32>(),
+            )
+        }
+    }
+
+    pub fn set_heartbeat_timeout(&mut self, value: i32) -> i32 {
+        unsafe {
+            ffi::zmq_setsockopt(
+                self.0,
+                ffi::ZMQ_HEARTBEAT_TIMEOUT,
+                value as *const c_void,
+                mem::size_of::<i32>(),
+            )
+        }
+    }
+
+    pub fn set_heartbeat_ttl(&mut self, value: i32) -> i32 {
+        unsafe {
+            ffi::zmq_setsockopt(
+                self.0,
+                ffi::ZMQ_HEARTBEAT_TTL,
+                value as *const c_void,
+                mem::size_of::<i32>(),
+            )
+        }
+    }
+
+    pub fn set_immediate(&mut self, flag: bool) -> i32 {
+        unsafe {
+            ffi::zmq_setsockopt(
+                self.0,
+                ffi::ZMQ_IMMEDIATE,
+                flag as i32 as *const c_void,
+                mem::size_of::<i32>(),
+            )
+        }
+    }
+
+    pub fn set_invert_matching(&mut self, flag: bool) -> i32 {
+        unsafe {
+            ffi::zmq_setsockopt(
+                self.0,
+                ffi::ZMQ_INVERT_MATCHING,
+                flag as i32 as *const c_void,
+                mem::size_of::<i32>(),
+            )
+        }
+    }
+
+    pub fn set_ipv6(&mut self, flag: bool) -> i32 {
+        unsafe {
+            ffi::zmq_setsockopt(
+                self.0,
+                ffi::ZMQ_IPV6,
+                flag as i32 as *const c_void,
+                mem::size_of::<i32>(),
+            )
+        }
+    }
+
+    pub fn set_linger(&mut self, value: i32) -> i32 {
+        unsafe {
+            ffi::zmq_setsockopt(
+                self.0,
+                ffi::ZMQ_LINGER,
+                value as *const c_void,
+                mem::size_of::<i32>(),
+            )
+        }
+    }
+
 }
 
 impl Drop for Socket {
