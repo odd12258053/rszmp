@@ -1,4 +1,5 @@
 use libc::{c_char, c_int, c_void};
+use std::fmt::{Debug, Display, Formatter};
 use std::{mem, ptr, str};
 
 pub mod ffi;
@@ -28,6 +29,224 @@ impl Version {
 impl Default for Version {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+pub enum ErrNo {
+    ENOTSUP,
+    EPROTONOSUPPORT,
+    ENOBUFS,
+    ENETDOWN,
+    EADDRINUSE,
+    EADDRNOTAVAIL,
+    ECONNREFUSED,
+    EINPROGRESS,
+    ENOTSOCK,
+    EMSGSIZE,
+    EAFNOSUPPORT,
+    ENETUNREACH,
+    ECONNABORTED,
+    ECONNRESET,
+    ENOTCONN,
+    ETIMEDOUT,
+    EHOSTUNREACH,
+    ENETRESET,
+    EFSM,
+    ENOCOMPATPROTO,
+    ETERM,
+    EMTHREAD,
+    Unknown(i32),
+}
+
+impl From<i32> for ErrNo {
+    fn from(errno: i32) -> Self {
+        match errno {
+            ffi::ENOTSUP => ErrNo::ENOTSUP,
+            ffi::EPROTONOSUPPORT => ErrNo::EPROTONOSUPPORT,
+            ffi::ENOBUFS => ErrNo::ENOBUFS,
+            ffi::ENETDOWN => ErrNo::ENETDOWN,
+            ffi::EADDRINUSE => ErrNo::EADDRINUSE,
+            ffi::EADDRNOTAVAIL => ErrNo::EADDRNOTAVAIL,
+            ffi::ECONNREFUSED => ErrNo::ECONNREFUSED,
+            ffi::EINPROGRESS => ErrNo::EINPROGRESS,
+            ffi::ENOTSOCK => ErrNo::ENOTSOCK,
+            ffi::EMSGSIZE => ErrNo::EMSGSIZE,
+            ffi::EAFNOSUPPORT => ErrNo::EAFNOSUPPORT,
+            ffi::ENETUNREACH => ErrNo::ENETUNREACH,
+            ffi::ECONNABORTED => ErrNo::ECONNABORTED,
+            ffi::ECONNRESET => ErrNo::ECONNRESET,
+            ffi::ENOTCONN => ErrNo::ENOTCONN,
+            ffi::ETIMEDOUT => ErrNo::ETIMEDOUT,
+            ffi::EHOSTUNREACH => ErrNo::EHOSTUNREACH,
+            ffi::ENETRESET => ErrNo::ENETRESET,
+            ffi::EFSM => ErrNo::EFSM,
+            ffi::ENOCOMPATPROTO => ErrNo::ENOCOMPATPROTO,
+            ffi::ETERM => ErrNo::ETERM,
+            ffi::EMTHREAD => ErrNo::EMTHREAD,
+            other => ErrNo::Unknown(other),
+        }
+    }
+}
+
+impl ErrNo {
+    pub fn get_errno() -> ErrNo {
+        ErrNo::from(unsafe { ffi::zmq_errno() } as i32)
+    }
+    pub fn errno(&self) -> i32 {
+        match self {
+            ErrNo::ENOTSUP => ffi::ENOTSUP,
+            ErrNo::EPROTONOSUPPORT => ffi::EPROTONOSUPPORT,
+            ErrNo::ENOBUFS => ffi::ENOBUFS,
+            ErrNo::ENETDOWN => ffi::ENETDOWN,
+            ErrNo::EADDRINUSE => ffi::EADDRINUSE,
+            ErrNo::EADDRNOTAVAIL => ffi::EADDRNOTAVAIL,
+            ErrNo::ECONNREFUSED => ffi::ECONNREFUSED,
+            ErrNo::EINPROGRESS => ffi::EINPROGRESS,
+            ErrNo::ENOTSOCK => ffi::ENOTSOCK,
+            ErrNo::EMSGSIZE => ffi::EMSGSIZE,
+            ErrNo::EAFNOSUPPORT => ffi::EAFNOSUPPORT,
+            ErrNo::ENETUNREACH => ffi::ENETUNREACH,
+            ErrNo::ECONNABORTED => ffi::ECONNABORTED,
+            ErrNo::ECONNRESET => ffi::ECONNRESET,
+            ErrNo::ENOTCONN => ffi::ENOTCONN,
+            ErrNo::ETIMEDOUT => ffi::ETIMEDOUT,
+            ErrNo::EHOSTUNREACH => ffi::EHOSTUNREACH,
+            ErrNo::ENETRESET => ffi::ENETRESET,
+            ErrNo::EFSM => ffi::EFSM,
+            ErrNo::ENOCOMPATPROTO => ffi::ENOCOMPATPROTO,
+            ErrNo::ETERM => ffi::ETERM,
+            ErrNo::EMTHREAD => ffi::EMTHREAD,
+            ErrNo::Unknown(val) => *val,
+        }
+    }
+    pub fn err_msg(&self) -> String {
+        get_err_msg(self.errno())
+    }
+}
+
+pub fn get_err_msg(errno: i32) -> String {
+    unsafe {
+        std::ffi::CStr::from_ptr(ffi::zmq_strerror(errno))
+            .to_str()
+            .unwrap()
+            .to_string()
+    }
+}
+
+pub struct Error(i32);
+
+impl Error {
+    pub fn new() -> Self {
+        Self(unsafe { ffi::zmq_errno() } as i32)
+    }
+    pub fn errno(&self) -> ErrNo {
+        ErrNo::from(self.0)
+    }
+}
+
+impl From<i32> for Error {
+    fn from(errno: i32) -> Self {
+        Self(errno)
+    }
+}
+
+impl Default for Error {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+impl Debug for Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("[{}] {}", self.0, get_err_msg(self.0)))
+    }
+}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("[{}] {}", self.0, get_err_msg(self.0)))
+    }
+}
+
+impl std::error::Error for Error {}
+
+pub type Result<T> = std::result::Result<T, Error>;
+
+macro_rules! try_err {
+    ($ex: expr) => {
+        if $ex == -1 {
+            return Err(Error::new());
+        }
+    };
+}
+
+pub struct Message(ffi::ZmqMsgT);
+
+impl Message {
+    pub fn new() -> Self {
+        Self::with_capacity(0).unwrap()
+    }
+    pub fn close(&mut self) -> Result<()> {
+        try_err!(unsafe { ffi::zmq_msg_close(&mut self.0) });
+        Ok(())
+    }
+    pub fn with_capacity(size: usize) -> Result<Self> {
+        let mut msg: ffi::ZmqMsgT = unsafe { mem::zeroed() };
+        try_err!(unsafe { ffi::zmq_msg_init_size(&mut msg, size) });
+        Ok(Message(msg))
+    }
+    pub fn as_bytes(&mut self) -> Option<&[u8]> {
+        unsafe {
+            let data = ffi::zmq_msg_data(&mut self.0);
+            let len = ffi::zmq_msg_size(&self.0);
+            ptr::slice_from_raw_parts(data as *const u8, len).as_ref()
+        }
+    }
+    pub fn as_str(&mut self) -> Option<&str> {
+        self.as_bytes().and_then(|bytes| str::from_utf8(bytes).ok())
+    }
+}
+
+impl Default for Message {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Clone for Message {
+    fn clone(&self) -> Self {
+        Self(unsafe {
+            let mut src = self.0;
+            let mut msg: ffi::ZmqMsgT = mem::zeroed();
+            ffi::zmq_msg_init(&mut msg);
+            ffi::zmq_msg_copy(&mut msg, &mut src);
+            msg
+        })
+    }
+}
+
+impl From<&[u8]> for Message {
+    fn from(bytes: &[u8]) -> Self {
+        let mut msg = Message::with_capacity(bytes.len()).unwrap();
+        unsafe {
+            ptr::copy_nonoverlapping(
+                bytes.as_ptr() as *mut c_void,
+                ffi::zmq_msg_data(&mut msg.0),
+                bytes.len(),
+            );
+        }
+        msg
+    }
+}
+
+impl From<&str> for Message {
+    fn from(msg: &str) -> Self {
+        Self::from(msg.as_bytes())
+    }
+}
+
+impl Drop for Message {
+    fn drop(&mut self) {
+        let _ = self.close();
     }
 }
 
@@ -62,79 +281,6 @@ impl SocketType {
             SocketType::XSUB => ffi::ZMQ_XSUB,
             SocketType::STREAM => ffi::ZMQ_STREAM,
         }
-    }
-}
-
-pub struct Message(ffi::ZmqMsgT);
-
-impl Message {
-    pub fn new() -> Self {
-        Self::with_capacity(0)
-    }
-    pub fn close(&mut self) -> i32 {
-        unsafe { ffi::zmq_msg_close(&mut self.0) }
-    }
-    pub fn with_capacity(size: usize) -> Self {
-        Message(unsafe {
-            let mut msg: ffi::ZmqMsgT = mem::zeroed();
-            let rc = ffi::zmq_msg_init_size(&mut msg, size);
-            assert_eq!(rc, 0);
-            msg
-        })
-    }
-    pub fn as_bytes(&mut self) -> Option<&[u8]> {
-        unsafe {
-            let data = ffi::zmq_msg_data(&mut self.0);
-            let len = ffi::zmq_msg_size(&self.0);
-            ptr::slice_from_raw_parts(data as *const u8, len).as_ref()
-        }
-    }
-    pub fn as_str(&mut self) -> Option<&str> {
-        self.as_bytes().and_then(|bytes| str::from_utf8(bytes).ok())
-    }
-}
-
-impl Default for Message {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Clone for Message {
-    fn clone(&self) -> Self {
-        Self(unsafe {
-            let mut src = self.0;
-            let mut msg: ffi::ZmqMsgT = mem::zeroed();
-            ffi::zmq_msg_init(&mut msg);
-            ffi::zmq_msg_copy(&mut msg, &mut src);
-            msg
-        })
-    }
-}
-
-impl From<&[u8]> for Message {
-    fn from(bytes: &[u8]) -> Self {
-        let mut msg = Message::with_capacity(bytes.len());
-        unsafe {
-            ptr::copy_nonoverlapping(
-                bytes.as_ptr() as *mut c_void,
-                ffi::zmq_msg_data(&mut msg.0),
-                bytes.len(),
-            );
-        }
-        msg
-    }
-}
-
-impl From<&str> for Message {
-    fn from(msg: &str) -> Self {
-        Self::from(msg.as_bytes())
-    }
-}
-
-impl Drop for Message {
-    fn drop(&mut self) {
-        self.close();
     }
 }
 
@@ -189,52 +335,56 @@ impl Default for RecvFlag {
 
 macro_rules! setsockopt {
     ($name: ident, bool, $option: path) => {
-        pub fn $name(&mut self, flag: bool) -> i32 {
-            unsafe {
+        pub fn $name(&mut self, flag: bool) -> Result<()> {
+            try_err!(unsafe {
                 ffi::zmq_setsockopt(
                     self.0,
                     $option,
                     flag as i32 as *const c_void,
                     mem::size_of::<i32>(),
                 )
-            }
+            });
+            Ok(())
         }
     };
     ($name: ident, &str, $option: path) => {
-        pub fn $name(&mut self, value: &str) -> i32 {
+        pub fn $name(&mut self, value: &str) -> Result<()> {
             let bytes = value.as_bytes();
-            unsafe {
+            try_err!(unsafe {
                 ffi::zmq_setsockopt(
                     self.0,
                     $option,
                     bytes.as_ptr() as *const c_void,
                     bytes.len(),
                 )
-            }
+            });
+            Ok(())
         }
     };
     ($name: ident, &[u8], $option: path) => {
-        pub fn $name(&mut self, value: &[u8]) -> i32 {
-            unsafe {
+        pub fn $name(&mut self, value: &[u8]) -> Result<()> {
+            try_err!(unsafe {
                 ffi::zmq_setsockopt(
                     self.0,
                     $option,
                     value.as_ptr() as *const c_void,
                     value.len(),
                 )
-            }
+            });
+            Ok(())
         }
     };
     ($name: ident, $ty: ty, $option: path) => {
-        pub fn $name(&mut self, value: $ty) -> i32 {
-            unsafe {
+        pub fn $name(&mut self, value: $ty) -> Result<()> {
+            try_err!(unsafe {
                 ffi::zmq_setsockopt(
                     self.0,
                     $option,
                     value as *const c_void,
                     mem::size_of::<$ty>(),
                 )
-            }
+            });
+            Ok(())
         }
     };
 }
@@ -242,53 +392,68 @@ macro_rules! setsockopt {
 pub struct Socket(*mut c_void);
 
 impl Socket {
-    pub fn bind(&self, addr: &str) -> i32 {
-        unsafe { ffi::zmq_bind(self.0, addr.as_bytes().to_vec().as_ptr() as *const c_char) }
+    pub fn bind(&self, addr: &str) -> Result<()> {
+        try_err!(unsafe {
+            ffi::zmq_bind(self.0, addr.as_bytes().to_vec().as_ptr() as *const c_char)
+        });
+        Ok(())
     }
-    pub fn unbind(&self, addr: &str) -> i32 {
-        unsafe { ffi::zmq_unbind(self.0, addr.as_bytes().to_vec().as_ptr() as *const c_char) }
+    pub fn unbind(&self, addr: &str) -> Result<()> {
+        try_err!(unsafe {
+            ffi::zmq_unbind(self.0, addr.as_bytes().to_vec().as_ptr() as *const c_char)
+        });
+        Ok(())
     }
-    pub fn connect(&self, addr: &str) -> i32 {
-        unsafe { ffi::zmq_connect(self.0, addr.as_bytes().to_vec().as_ptr() as *const c_char) }
+    pub fn connect(&self, addr: &str) -> Result<()> {
+        try_err!(unsafe {
+            ffi::zmq_connect(self.0, addr.as_bytes().to_vec().as_ptr() as *const c_char)
+        });
+        Ok(())
     }
-    pub fn disconnect(&self, addr: &str) -> i32 {
-        unsafe { ffi::zmq_disconnect(self.0, addr.as_bytes().to_vec().as_ptr() as *const c_char) }
+    pub fn disconnect(&self, addr: &str) -> Result<()> {
+        try_err!(unsafe {
+            ffi::zmq_disconnect(self.0, addr.as_bytes().to_vec().as_ptr() as *const c_char)
+        });
+        Ok(())
     }
-    pub fn close(&self) -> i32 {
-        unsafe { ffi::zmq_close(self.0) }
+    pub fn close(&self) -> Result<()> {
+        try_err!(unsafe { ffi::zmq_close(self.0) });
+        Ok(())
     }
-    pub fn send(&self, msg: &[u8], flags: SendFlag) -> i32 {
+    pub fn send(&self, msg: &[u8], flags: SendFlag) -> Result<i32> {
         let len = msg.len();
-        unsafe { ffi::zmq_send(self.0, msg.as_ptr() as *const c_void, len, flags.0) }
+        let rc = unsafe { ffi::zmq_send(self.0, msg.as_ptr() as *const c_void, len, flags.0) };
+        try_err!(rc);
+        Ok(rc as i32)
     }
-    pub fn send_msg(&self, msg: &mut Message, flags: SendFlag) -> i32 {
-        unsafe { ffi::zmq_msg_send(&mut msg.0, self.0, flags.0) }
+    pub fn send_msg(&self, msg: &mut Message, flags: SendFlag) -> Result<i32> {
+        let rc = unsafe { ffi::zmq_msg_send(&mut msg.0, self.0, flags.0) };
+        try_err!(rc);
+        Ok(rc as i32)
     }
-    pub fn recv(&self, bytes: &mut [u8], flags: RecvFlag) -> i32 {
+    pub fn recv(&self, bytes: &mut [u8], flags: RecvFlag) -> Result<i32> {
         let len = bytes.len();
-        unsafe { ffi::zmq_recv(self.0, bytes.as_ptr() as *mut c_void, len, flags.0) }
+        let rc = unsafe { ffi::zmq_recv(self.0, bytes.as_ptr() as *mut c_void, len, flags.0) };
+        try_err!(rc);
+        Ok(rc as i32)
     }
-    pub fn recv_msg(&self, msg: &mut Message, flags: RecvFlag) -> i32 {
-        unsafe { ffi::zmq_msg_recv(&mut msg.0, self.0, flags.0) }
+    pub fn recv_msg(&self, msg: &mut Message, flags: RecvFlag) -> Result<i32> {
+        let rc = unsafe { ffi::zmq_msg_recv(&mut msg.0, self.0, flags.0) };
+        try_err!(rc);
+        Ok(rc as i32)
     }
-    // TODO; handle error.
-    pub fn get_routing_id(&self) -> Option<Vec<u8>> {
+    pub fn get_routing_id(&self) -> Result<Vec<u8>> {
         let mut size = 255;
         let mut buffer = [0u8; 255];
-        unsafe {
-            let rc = ffi::zmq_getsockopt(
+        try_err!(unsafe {
+            ffi::zmq_getsockopt(
                 self.0,
                 ffi::ZMQ_ROUTING_ID,
                 buffer.as_mut_ptr() as *mut c_void,
                 &mut size,
-            );
-            assert_eq!(rc, 0);
-        }
-        if size > 0 {
-            Some(buffer[0..size].to_vec())
-        } else {
-            None
-        }
+            )
+        });
+        Ok(buffer[0..size].to_vec())
     }
     setsockopt!(set_affinity, u64, ffi::ZMQ_AFFINITY);
     setsockopt!(set_backlog, i32, ffi::ZMQ_BACKLOG);
@@ -374,12 +539,13 @@ impl Socket {
 
 impl Drop for Socket {
     fn drop(&mut self) {
-        self.close();
+        let _ = self.close();
     }
 }
 
-pub fn proxy(frontend: &Socket, backend: &Socket) -> i32 {
-    unsafe { ffi::zmq_proxy(frontend.0, backend.0, ptr::null_mut()) }
+pub fn proxy(frontend: &Socket, backend: &Socket) -> Result<()> {
+    try_err!(unsafe { ffi::zmq_proxy(frontend.0, backend.0, ptr::null_mut()) });
+    Ok(())
 }
 
 pub struct Context(*mut c_void);
@@ -391,11 +557,13 @@ impl Context {
     pub fn socket(&self, stype: SocketType) -> Socket {
         Socket(unsafe { ffi::zmq_socket(self.0, stype.code()) })
     }
-    pub fn terminate(&self) -> i32 {
-        unsafe { ffi::zmq_ctx_term(self.0) }
+    pub fn terminate(&self) -> Result<()> {
+        try_err!(unsafe { ffi::zmq_ctx_term(self.0) });
+        Ok(())
     }
-    pub fn shutdown(&self) -> i32 {
-        unsafe { ffi::zmq_ctx_shutdown(self.0) }
+    pub fn shutdown(&self) -> Result<()> {
+        try_err!(unsafe { ffi::zmq_ctx_shutdown(self.0) });
+        Ok(())
     }
 }
 
@@ -407,7 +575,7 @@ impl Default for Context {
 
 impl Drop for Context {
     fn drop(&mut self) {
-        self.terminate();
+        let _ = self.terminate();
     }
 }
 
@@ -434,113 +602,14 @@ impl Default for PollItem {
     }
 }
 
-pub fn poll(items: &mut [PollItem], timeout: i64) -> i32 {
-    unsafe {
+pub fn poll(items: &mut [PollItem], timeout: i64) -> Result<i32> {
+    let rc = unsafe {
         ffi::zmq_poll(
             items.as_mut_ptr() as *mut ffi::ZmqPollitemT,
             items.len() as c_int,
             timeout,
         )
-    }
-}
-
-pub enum ErrNo {
-    ENOTSUP,
-    EPROTONOSUPPORT,
-    ENOBUFS,
-    ENETDOWN,
-    EADDRINUSE,
-    EADDRNOTAVAIL,
-    ECONNREFUSED,
-    EINPROGRESS,
-    ENOTSOCK,
-    EMSGSIZE,
-    EAFNOSUPPORT,
-    ENETUNREACH,
-    ECONNABORTED,
-    ECONNRESET,
-    ENOTCONN,
-    ETIMEDOUT,
-    EHOSTUNREACH,
-    ENETRESET,
-    EFSM,
-    ENOCOMPATPROTO,
-    ETERM,
-    EMTHREAD,
-}
-
-impl From<i32> for ErrNo {
-    fn from(errno: i32) -> Self {
-        match errno {
-            ffi::ENOTSUP => ErrNo::ENOTSUP,
-            ffi::EPROTONOSUPPORT => ErrNo::EPROTONOSUPPORT,
-            ffi::ENOBUFS => ErrNo::ENOBUFS,
-            ffi::ENETDOWN => ErrNo::ENETDOWN,
-            ffi::EADDRINUSE => ErrNo::EADDRINUSE,
-            ffi::EADDRNOTAVAIL => ErrNo::EADDRNOTAVAIL,
-            ffi::ECONNREFUSED => ErrNo::ECONNREFUSED,
-            ffi::EINPROGRESS => ErrNo::EINPROGRESS,
-            ffi::ENOTSOCK => ErrNo::ENOTSOCK,
-            ffi::EMSGSIZE => ErrNo::EMSGSIZE,
-            ffi::EAFNOSUPPORT => ErrNo::EAFNOSUPPORT,
-            ffi::ENETUNREACH => ErrNo::ENETUNREACH,
-            ffi::ECONNABORTED => ErrNo::ECONNABORTED,
-            ffi::ECONNRESET => ErrNo::ECONNRESET,
-            ffi::ENOTCONN => ErrNo::ENOTCONN,
-            ffi::ETIMEDOUT => ErrNo::ETIMEDOUT,
-            ffi::EHOSTUNREACH => ErrNo::EHOSTUNREACH,
-            ffi::ENETRESET => ErrNo::ENETRESET,
-            ffi::EFSM => ErrNo::EFSM,
-            ffi::ENOCOMPATPROTO => ErrNo::ENOCOMPATPROTO,
-            ffi::ETERM => ErrNo::ETERM,
-            ffi::EMTHREAD => ErrNo::EMTHREAD,
-            other => {
-                panic!("Unknown error: {}", other)
-            }
-        }
-    }
-}
-
-impl ErrNo {
-    pub fn get_errno() -> ErrNo {
-        ErrNo::from(unsafe { ffi::zmq_errno() } as i32)
-    }
-    pub fn errno(&self) -> i32 {
-        match self {
-            ErrNo::ENOTSUP => ffi::ENOTSUP,
-            ErrNo::EPROTONOSUPPORT => ffi::EPROTONOSUPPORT,
-            ErrNo::ENOBUFS => ffi::ENOBUFS,
-            ErrNo::ENETDOWN => ffi::ENETDOWN,
-            ErrNo::EADDRINUSE => ffi::EADDRINUSE,
-            ErrNo::EADDRNOTAVAIL => ffi::EADDRNOTAVAIL,
-            ErrNo::ECONNREFUSED => ffi::ECONNREFUSED,
-            ErrNo::EINPROGRESS => ffi::EINPROGRESS,
-            ErrNo::ENOTSOCK => ffi::ENOTSOCK,
-            ErrNo::EMSGSIZE => ffi::EMSGSIZE,
-            ErrNo::EAFNOSUPPORT => ffi::EAFNOSUPPORT,
-            ErrNo::ENETUNREACH => ffi::ENETUNREACH,
-            ErrNo::ECONNABORTED => ffi::ECONNABORTED,
-            ErrNo::ECONNRESET => ffi::ECONNRESET,
-            ErrNo::ENOTCONN => ffi::ENOTCONN,
-            ErrNo::ETIMEDOUT => ffi::ETIMEDOUT,
-            ErrNo::EHOSTUNREACH => ffi::EHOSTUNREACH,
-            ErrNo::ENETRESET => ffi::ENETRESET,
-            ErrNo::EFSM => ffi::EFSM,
-            ErrNo::ENOCOMPATPROTO => ffi::ENOCOMPATPROTO,
-            ErrNo::ETERM => ffi::ETERM,
-            ErrNo::EMTHREAD => ffi::EMTHREAD,
-        }
-    }
-    pub fn err_msg(&self) -> String {
-        get_err_msg(self.errno())
-    }
-}
-
-pub fn get_err_msg(errno: i32) -> String {
-    unsafe {
-        std::ffi::CStr::from_ptr(ffi::zmq_strerror(errno))
-            .to_str()
-            .unwrap()
-            .to_string()
-    }
+    };
+    try_err!(rc);
+    Ok(rc as i32)
 }
