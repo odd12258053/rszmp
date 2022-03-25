@@ -515,7 +515,6 @@ impl Socket {
             )
         }
     }
-
 }
 
 impl Drop for Socket {
