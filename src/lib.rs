@@ -256,6 +256,10 @@ impl Drop for Socket {
     }
 }
 
+pub fn proxy(frontend: &Socket, backend: &Socket) -> i32 {
+    unsafe { ffi::zmq_proxy(frontend.0, backend.0, ptr::null_mut()) }
+}
+
 pub struct Context(*mut c_void);
 
 impl Context {
