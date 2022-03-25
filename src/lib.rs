@@ -187,6 +187,58 @@ impl Default for RecvFlag {
     }
 }
 
+macro_rules! setsockopt {
+    ($name: ident, bool, $option: path) => {
+        pub fn $name(&mut self, flag: bool) -> i32 {
+            unsafe {
+                ffi::zmq_setsockopt(
+                    self.0,
+                    $option,
+                    flag as i32 as *const c_void,
+                    mem::size_of::<i32>(),
+                )
+            }
+        }
+    };
+    ($name: ident, &str, $option: path) => {
+        pub fn $name(&mut self, value: &str) -> i32 {
+            let bytes = value.as_bytes();
+            unsafe {
+                ffi::zmq_setsockopt(
+                    self.0,
+                    $option,
+                    bytes.as_ptr() as *const c_void,
+                    bytes.len(),
+                )
+            }
+        }
+    };
+    ($name: ident, &[u8], $option: path) => {
+        pub fn $name(&mut self, value: &[u8]) -> i32 {
+            unsafe {
+                ffi::zmq_setsockopt(
+                    self.0,
+                    $option,
+                    value.as_ptr() as *const c_void,
+                    value.len(),
+                )
+            }
+        }
+    };
+    ($name: ident, $ty: ty, $option: path) => {
+        pub fn $name(&mut self, value: $ty) -> i32 {
+            unsafe {
+                ffi::zmq_setsockopt(
+                    self.0,
+                    $option,
+                    value as *const c_void,
+                    mem::size_of::<$ty>(),
+                )
+            }
+        }
+    };
+}
+
 pub struct Socket(*mut c_void);
 
 impl Socket {
@@ -219,16 +271,6 @@ impl Socket {
     pub fn recv_msg(&self, msg: &mut Message, flags: RecvFlag) -> i32 {
         unsafe { ffi::zmq_msg_recv(&mut msg.0, self.0, flags.0) }
     }
-    pub fn set_routing_id(&mut self, routing_id: &[u8]) -> i32 {
-        unsafe {
-            ffi::zmq_setsockopt(
-                self.0,
-                ffi::ZMQ_ROUTING_ID,
-                routing_id.as_ptr() as *const c_void,
-                routing_id.len(),
-            )
-        }
-    }
     // TODO; handle error.
     pub fn get_routing_id(&self) -> Option<Vec<u8>> {
         let mut size = 255;
@@ -248,273 +290,86 @@ impl Socket {
             None
         }
     }
-
-    pub fn set_affinity(&mut self, value: u64) -> i32 {
-        unsafe {
-            ffi::zmq_setsockopt(
-                self.0,
-                ffi::ZMQ_AFFINITY,
-                value as *const c_void,
-                mem::size_of::<u64>(),
-            )
-        }
-    }
-
-    pub fn set_backlog(&mut self, value: i32) -> i32 {
-        unsafe {
-            ffi::zmq_setsockopt(
-                self.0,
-                ffi::ZMQ_BACKLOG,
-                value as *const c_void,
-                mem::size_of::<i32>(),
-            )
-        }
-    }
-
-    pub fn set_bindtodevice(&mut self, value: &str) -> i32 {
-        let bytes = value.as_bytes();
-        unsafe {
-            ffi::zmq_setsockopt(
-                self.0,
-                ffi::ZMQ_BINDTODEVICE,
-                bytes.as_ptr() as *const c_void,
-                bytes.len(),
-            )
-        }
-    }
-
-    pub fn set_connect_routing_id(&mut self, value: &[u8]) -> i32 {
-        unsafe {
-            ffi::zmq_setsockopt(
-                self.0,
-                ffi::ZMQ_CONNECT_ROUTING_ID,
-                value.as_ptr() as *const c_void,
-                value.len(),
-            )
-        }
-    }
-
-    pub fn set_conflate(&mut self, flag: bool) -> i32 {
-        unsafe {
-            ffi::zmq_setsockopt(
-                self.0,
-                ffi::ZMQ_CONFLATE,
-                flag as i32 as *const c_void,
-                mem::size_of::<i32>(),
-            )
-        }
-    }
-
-    pub fn set_connect_timeout(&mut self, value: i32) -> i32 {
-        unsafe {
-            ffi::zmq_setsockopt(
-                self.0,
-                ffi::ZMQ_CONNECT_TIMEOUT,
-                value as *const c_void,
-                mem::size_of::<i32>(),
-            )
-        }
-    }
-
-    pub fn set_curve_publickey(&mut self, value: &[u8]) -> i32 {
-        unsafe {
-            ffi::zmq_setsockopt(
-                self.0,
-                ffi::ZMQ_CURVE_PUBLICKEY,
-                value.as_ptr() as *const c_void,
-                value.len(),
-            )
-        }
-    }
-
-    pub fn set_curve_secretkey(&mut self, value: &[u8]) -> i32 {
-        unsafe {
-            ffi::zmq_setsockopt(
-                self.0,
-                ffi::ZMQ_CURVE_SECRETKEY,
-                value.as_ptr() as *const c_void,
-                value.len(),
-            )
-        }
-    }
-
-    pub fn set_curve_server(&mut self, flag: bool) -> i32 {
-        unsafe {
-            ffi::zmq_setsockopt(
-                self.0,
-                ffi::ZMQ_CURVE_SERVER,
-                flag as i32 as *const c_void,
-                mem::size_of::<i32>(),
-            )
-        }
-    }
-
-    pub fn set_curve_serverkey(&mut self, value: &[u8]) -> i32 {
-        unsafe {
-            ffi::zmq_setsockopt(
-                self.0,
-                ffi::ZMQ_CURVE_SERVERKEY,
-                value.as_ptr() as *const c_void,
-                value.len(),
-            )
-        }
-    }
-
-    pub fn set_gssapi_plaintext(&mut self, flag: bool) -> i32 {
-        unsafe {
-            ffi::zmq_setsockopt(
-                self.0,
-                ffi::ZMQ_GSSAPI_PLAINTEXT,
-                flag as i32 as *const c_void,
-                mem::size_of::<i32>(),
-            )
-        }
-    }
-
-    pub fn set_gssapi_principal(&mut self, value: &str) -> i32 {
-        let bytes = value.as_bytes();
-        unsafe {
-            ffi::zmq_setsockopt(
-                self.0,
-                ffi::ZMQ_GSSAPI_PRINCIPAL,
-                bytes.as_ptr() as *const c_void,
-                bytes.len(),
-            )
-        }
-    }
-
-    pub fn set_gssapi_server(&mut self, flag: bool) -> i32 {
-        unsafe {
-            ffi::zmq_setsockopt(
-                self.0,
-                ffi::ZMQ_GSSAPI_SERVER,
-                flag as i32 as *const c_void,
-                mem::size_of::<i32>(),
-            )
-        }
-    }
-
-    pub fn set_gssapi_service_principal(&mut self, value: &str) -> i32 {
-        let bytes = value.as_bytes();
-        unsafe {
-            ffi::zmq_setsockopt(
-                self.0,
-                ffi::ZMQ_GSSAPI_SERVICE_PRINCIPAL,
-                bytes.as_ptr() as *const c_void,
-                bytes.len(),
-            )
-        }
-    }
-
-    pub fn set_gssapi_service_principal_nametype(&mut self, value: i32) -> i32 {
-        unsafe {
-            ffi::zmq_setsockopt(
-                self.0,
-                ffi::ZMQ_GSSAPI_SERVICE_PRINCIPAL_NAMETYPE,
-                value as *const c_void,
-                mem::size_of::<i32>(),
-            )
-        }
-    }
-
-    pub fn set_gssapi_principal_nametype(&mut self, value: i32) -> i32 {
-        unsafe {
-            ffi::zmq_setsockopt(
-                self.0,
-                ffi::ZMQ_GSSAPI_PRINCIPAL_NAMETYPE,
-                value as *const c_void,
-                mem::size_of::<i32>(),
-            )
-        }
-    }
-
-    pub fn set_handshake_ivl(&mut self, value: i32) -> i32 {
-        unsafe {
-            ffi::zmq_setsockopt(
-                self.0,
-                ffi::ZMQ_HANDSHAKE_IVL,
-                value as *const c_void,
-                mem::size_of::<i32>(),
-            )
-        }
-    }
-
-    pub fn set_heartbeat_ivl(&mut self, value: i32) -> i32 {
-        unsafe {
-            ffi::zmq_setsockopt(
-                self.0,
-                ffi::ZMQ_HEARTBEAT_IVL,
-                value as *const c_void,
-                mem::size_of::<i32>(),
-            )
-        }
-    }
-
-    pub fn set_heartbeat_timeout(&mut self, value: i32) -> i32 {
-        unsafe {
-            ffi::zmq_setsockopt(
-                self.0,
-                ffi::ZMQ_HEARTBEAT_TIMEOUT,
-                value as *const c_void,
-                mem::size_of::<i32>(),
-            )
-        }
-    }
-
-    pub fn set_heartbeat_ttl(&mut self, value: i32) -> i32 {
-        unsafe {
-            ffi::zmq_setsockopt(
-                self.0,
-                ffi::ZMQ_HEARTBEAT_TTL,
-                value as *const c_void,
-                mem::size_of::<i32>(),
-            )
-        }
-    }
-
-    pub fn set_immediate(&mut self, flag: bool) -> i32 {
-        unsafe {
-            ffi::zmq_setsockopt(
-                self.0,
-                ffi::ZMQ_IMMEDIATE,
-                flag as i32 as *const c_void,
-                mem::size_of::<i32>(),
-            )
-        }
-    }
-
-    pub fn set_invert_matching(&mut self, flag: bool) -> i32 {
-        unsafe {
-            ffi::zmq_setsockopt(
-                self.0,
-                ffi::ZMQ_INVERT_MATCHING,
-                flag as i32 as *const c_void,
-                mem::size_of::<i32>(),
-            )
-        }
-    }
-
-    pub fn set_ipv6(&mut self, flag: bool) -> i32 {
-        unsafe {
-            ffi::zmq_setsockopt(
-                self.0,
-                ffi::ZMQ_IPV6,
-                flag as i32 as *const c_void,
-                mem::size_of::<i32>(),
-            )
-        }
-    }
-
-    pub fn set_linger(&mut self, value: i32) -> i32 {
-        unsafe {
-            ffi::zmq_setsockopt(
-                self.0,
-                ffi::ZMQ_LINGER,
-                value as *const c_void,
-                mem::size_of::<i32>(),
-            )
-        }
-    }
+    setsockopt!(set_affinity, u64, ffi::ZMQ_AFFINITY);
+    setsockopt!(set_backlog, i32, ffi::ZMQ_BACKLOG);
+    setsockopt!(set_bindtodevice, &str, ffi::ZMQ_BINDTODEVICE);
+    setsockopt!(set_connect_routing_id, &[u8], ffi::ZMQ_CONNECT_ROUTING_ID);
+    setsockopt!(set_conflate, bool, ffi::ZMQ_CONFLATE);
+    setsockopt!(set_connect_timeout, i32, ffi::ZMQ_CONNECT_TIMEOUT);
+    setsockopt!(set_curve_publickey, &[u8], ffi::ZMQ_CURVE_PUBLICKEY);
+    setsockopt!(set_curve_secretkey, &[u8], ffi::ZMQ_CURVE_SECRETKEY);
+    setsockopt!(set_curve_server, bool, ffi::ZMQ_CURVE_SERVER);
+    setsockopt!(set_curve_serverkey, &[u8], ffi::ZMQ_CURVE_SERVERKEY);
+    setsockopt!(set_gssapi_plaintext, bool, ffi::ZMQ_GSSAPI_PLAINTEXT);
+    setsockopt!(set_gssapi_principal, &str, ffi::ZMQ_GSSAPI_PRINCIPAL);
+    setsockopt!(set_gssapi_server, bool, ffi::ZMQ_GSSAPI_SERVER);
+    setsockopt!(
+        set_gssapi_service_principal,
+        &str,
+        ffi::ZMQ_GSSAPI_SERVICE_PRINCIPAL
+    );
+    setsockopt!(
+        set_gssapi_service_principal_nametype,
+        i32,
+        ffi::ZMQ_GSSAPI_SERVICE_PRINCIPAL_NAMETYPE
+    );
+    setsockopt!(
+        set_gssapi_principal_nametype,
+        i32,
+        ffi::ZMQ_GSSAPI_PRINCIPAL_NAMETYPE
+    );
+    setsockopt!(set_handshake_ivl, i32, ffi::ZMQ_HANDSHAKE_IVL);
+    setsockopt!(set_heartbeat_ivl, i32, ffi::ZMQ_HEARTBEAT_IVL);
+    setsockopt!(set_heartbeat_timeout, i32, ffi::ZMQ_HEARTBEAT_TIMEOUT);
+    setsockopt!(set_heartbeat_ttl, i32, ffi::ZMQ_HEARTBEAT_TTL);
+    setsockopt!(set_immediate, bool, ffi::ZMQ_IMMEDIATE);
+    setsockopt!(set_invert_matching, bool, ffi::ZMQ_INVERT_MATCHING);
+    setsockopt!(set_ipv6, bool, ffi::ZMQ_IPV6);
+    setsockopt!(set_linger, i32, ffi::ZMQ_LINGER);
+    setsockopt!(set_maxmsgsize, i64, ffi::ZMQ_MAXMSGSIZE);
+    setsockopt!(set_multicast_hops, i32, ffi::ZMQ_MULTICAST_HOPS);
+    setsockopt!(set_multicast_maxtpdu, i32, ffi::ZMQ_MULTICAST_MAXTPDU);
+    setsockopt!(set_plain_password, &str, ffi::ZMQ_PLAIN_PASSWORD);
+    setsockopt!(set_plain_server, bool, ffi::ZMQ_PLAIN_SERVER);
+    setsockopt!(set_plain_username, &str, ffi::ZMQ_PLAIN_USERNAME);
+    setsockopt!(set_use_fd, i32, ffi::ZMQ_USE_FD);
+    setsockopt!(set_probe_router, bool, ffi::ZMQ_PROBE_ROUTER);
+    setsockopt!(set_rate, i32, ffi::ZMQ_RATE);
+    setsockopt!(set_rcvbuf, i32, ffi::ZMQ_RCVBUF);
+    setsockopt!(set_rcvhwm, i32, ffi::ZMQ_RCVHWM);
+    setsockopt!(set_rcvtimeo, i32, ffi::ZMQ_RCVTIMEO);
+    setsockopt!(set_reconnect_ivl, i32, ffi::ZMQ_RECONNECT_IVL);
+    setsockopt!(set_reconnect_ivl_max, i32, ffi::ZMQ_RECONNECT_IVL_MAX);
+    setsockopt!(set_recovery_ivl, i32, ffi::ZMQ_RECOVERY_IVL);
+    setsockopt!(set_req_correlate, bool, ffi::ZMQ_REQ_CORRELATE);
+    setsockopt!(set_req_relaxed, bool, ffi::ZMQ_REQ_RELAXED);
+    setsockopt!(set_router_handover, bool, ffi::ZMQ_ROUTER_HANDOVER);
+    setsockopt!(set_router_mandatory, bool, ffi::ZMQ_ROUTER_MANDATORY);
+    setsockopt!(set_router_raw, bool, ffi::ZMQ_ROUTER_RAW);
+    setsockopt!(set_routing_id, &[u8], ffi::ZMQ_ROUTING_ID);
+    setsockopt!(set_sndbuf, i32, ffi::ZMQ_SNDBUF);
+    setsockopt!(set_sndhwm, i32, ffi::ZMQ_SNDHWM);
+    setsockopt!(set_sndtimeo, i32, ffi::ZMQ_SNDTIMEO);
+    setsockopt!(set_socks_proxy, &str, ffi::ZMQ_SOCKS_PROXY);
+    setsockopt!(set_stream_notify, bool, ffi::ZMQ_STREAM_NOTIFY);
+    setsockopt!(set_subscribe, &[u8], ffi::ZMQ_SUBSCRIBE);
+    setsockopt!(set_tcp_keepalive, i32, ffi::ZMQ_TCP_KEEPALIVE);
+    setsockopt!(set_tcp_keepalive_cnt, i32, ffi::ZMQ_TCP_KEEPALIVE_CNT);
+    setsockopt!(set_tcp_keepalive_idle, i32, ffi::ZMQ_TCP_KEEPALIVE_IDLE);
+    setsockopt!(set_tcp_keepalive_intvl, i32, ffi::ZMQ_TCP_KEEPALIVE_INTVL);
+    setsockopt!(set_tcp_maxrt, i32, ffi::ZMQ_TCP_MAXRT);
+    setsockopt!(set_tos, i32, ffi::ZMQ_TOS);
+    setsockopt!(set_unsubscribe, &[u8], ffi::ZMQ_UNSUBSCRIBE);
+    setsockopt!(set_xpub_verbose, bool, ffi::ZMQ_XPUB_VERBOSE);
+    setsockopt!(set_xpub_verboser, bool, ffi::ZMQ_XPUB_VERBOSER);
+    setsockopt!(set_xpub_manual, bool, ffi::ZMQ_XPUB_MANUAL);
+    setsockopt!(set_xpub_nodrop, bool, ffi::ZMQ_XPUB_NODROP);
+    setsockopt!(set_xpub_welcome_msg, &[u8], ffi::ZMQ_XPUB_WELCOME_MSG);
+    setsockopt!(set_zap_domain, &str, ffi::ZMQ_ZAP_DOMAIN);
+    setsockopt!(set_vmci_buffer_size, u64, ffi::ZMQ_VMCI_BUFFER_SIZE);
+    setsockopt!(set_vmci_buffer_min_size, u64, ffi::ZMQ_VMCI_BUFFER_MIN_SIZE);
+    setsockopt!(set_vmci_buffer_max_size, u64, ffi::ZMQ_VMCI_BUFFER_MAX_SIZE);
+    setsockopt!(set_vmci_connect_timeout, i32, ffi::ZMQ_VMCI_CONNECT_TIMEOUT);
 }
 
 impl Drop for Socket {
