@@ -333,6 +333,68 @@ impl Default for RecvFlag {
     }
 }
 
+macro_rules! getsockopt {
+    ($name: ident, String, $option: path, $size: literal) => {
+        pub fn $name(&self) -> Result<String> {
+            let mut size = $size;
+            let mut buffer = [0u8; $size];
+            try_err!(unsafe {
+                ffi::zmq_getsockopt(
+                    self.0,
+                    $option,
+                    buffer.as_mut_ptr() as *mut c_void,
+                    &mut size,
+                )
+            });
+            // remove \0
+            Ok(String::from_utf8(buffer[0..size - 1].to_vec()).unwrap())
+        }
+    };
+    ($name: ident, Vec<u8>, $option: path, $size: literal) => {
+        pub fn $name(&self) -> Result<Vec<u8>> {
+            let mut size = $size;
+            let mut buffer = [0u8; $size];
+            try_err!(unsafe {
+                ffi::zmq_getsockopt(
+                    self.0,
+                    $option,
+                    buffer.as_mut_ptr() as *mut c_void,
+                    &mut size,
+                )
+            });
+            Ok(buffer[0..size].to_vec())
+        }
+    };
+    ($name: ident, bool, $option: path) => {
+        pub fn $name(&self) -> Result<bool> {
+            let mut value: i32 = 0;
+            try_err!(unsafe {
+                ffi::zmq_getsockopt(
+                    self.0,
+                    $option,
+                    &mut value as *mut i32 as *mut c_void,
+                    &mut mem::size_of::<i32>(),
+                )
+            });
+            Ok(value != 0)
+        }
+    };
+    ($name: ident, $ty: ty, $option: path) => {
+        pub fn $name(&self) -> Result<$ty> {
+            let mut value: $ty = 0;
+            try_err!(unsafe {
+                ffi::zmq_getsockopt(
+                    self.0,
+                    $option,
+                    &mut value as *mut $ty as *mut c_void,
+                    &mut mem::size_of::<$ty>(),
+                )
+            });
+            Ok(value)
+        }
+    };
+}
+
 macro_rules! setsockopt {
     ($name: ident, bool, $option: path) => {
         pub fn $name(&mut self, flag: bool) -> Result<()> {
@@ -442,19 +504,15 @@ impl Socket {
         try_err!(rc);
         Ok(rc as i32)
     }
-    pub fn get_routing_id(&self) -> Result<Vec<u8>> {
-        let mut size = 255;
-        let mut buffer = [0u8; 255];
-        try_err!(unsafe {
-            ffi::zmq_getsockopt(
-                self.0,
-                ffi::ZMQ_ROUTING_ID,
-                buffer.as_mut_ptr() as *mut c_void,
-                &mut size,
-            )
-        });
-        Ok(buffer[0..size].to_vec())
-    }
+    // TODO; Add all of options
+    getsockopt!(get_routing_id, Vec<u8>, ffi::ZMQ_ROUTING_ID, 255);
+
+    getsockopt!(get_affinity, u64, ffi::ZMQ_AFFINITY);
+    getsockopt!(get_backlog, i32, ffi::ZMQ_BACKLOG);
+    getsockopt!(get_bindtodevice, String, ffi::ZMQ_BINDTODEVICE, 255);
+
+    getsockopt!(get_conflate, bool, ffi::ZMQ_CONFLATE);
+
     setsockopt!(set_affinity, u64, ffi::ZMQ_AFFINITY);
     setsockopt!(set_backlog, i32, ffi::ZMQ_BACKLOG);
     setsockopt!(set_bindtodevice, &str, ffi::ZMQ_BINDTODEVICE);
