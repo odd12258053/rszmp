@@ -505,13 +505,77 @@ impl Socket {
         Ok(rc as i32)
     }
     // TODO; Add all of options
-    getsockopt!(get_routing_id, Vec<u8>, ffi::ZMQ_ROUTING_ID, 255);
 
     getsockopt!(get_affinity, u64, ffi::ZMQ_AFFINITY);
     getsockopt!(get_backlog, i32, ffi::ZMQ_BACKLOG);
     getsockopt!(get_bindtodevice, String, ffi::ZMQ_BINDTODEVICE, 255);
-
-    getsockopt!(get_conflate, bool, ffi::ZMQ_CONFLATE);
+    getsockopt!(get_connect_timeout, i32, ffi::ZMQ_CONNECT_TIMEOUT);
+    getsockopt!(get_curve_publickey, Vec<u8>, ffi::ZMQ_CURVE_PUBLICKEY, 255);
+    getsockopt!(get_curve_secretkey, Vec<u8>, ffi::ZMQ_CURVE_SECRETKEY, 255);
+    getsockopt!(get_curve_serverkey, Vec<u8>, ffi::ZMQ_CURVE_SERVERKEY, 255);
+    getsockopt!(get_events, i32, ffi::ZMQ_EVENTS);
+    getsockopt!(get_fd, i32, ffi::ZMQ_FD);
+    getsockopt!(get_gssapi_plaintext, bool, ffi::ZMQ_GSSAPI_PLAINTEXT);
+    getsockopt!(get_gssapi_principal, String, ffi::ZMQ_GSSAPI_PRINCIPAL, 255);
+    getsockopt!(get_gssapi_server, bool, ffi::ZMQ_GSSAPI_SERVER);
+    getsockopt!(
+        get_gssapi_service_principal,
+        String,
+        ffi::ZMQ_GSSAPI_SERVICE_PRINCIPAL,
+        255
+    );
+    getsockopt!(
+        get_gssapi_service_principal_nametype,
+        i32,
+        ffi::ZMQ_GSSAPI_SERVICE_PRINCIPAL_NAMETYPE
+    );
+    getsockopt!(
+        get_gssapi_principal_nametype,
+        i32,
+        ffi::ZMQ_GSSAPI_PRINCIPAL_NAMETYPE
+    );
+    getsockopt!(get_handshake_ivl, i32, ffi::ZMQ_HANDSHAKE_IVL);
+    getsockopt!(get_immediate, bool, ffi::ZMQ_IMMEDIATE);
+    getsockopt!(get_invert_matching, bool, ffi::ZMQ_INVERT_MATCHING);
+    getsockopt!(get_ipv_6, bool, ffi::ZMQ_IPV6);
+    getsockopt!(get_last_endpoint, String, ffi::ZMQ_LAST_ENDPOINT, 255);
+    getsockopt!(get_linger, i32, ffi::ZMQ_LINGER);
+    getsockopt!(get_maxmsgsize, i64, ffi::ZMQ_MAXMSGSIZE);
+    getsockopt!(get_mechanism, i32, ffi::ZMQ_MECHANISM);
+    getsockopt!(get_multicast_hops, i32, ffi::ZMQ_MULTICAST_HOPS);
+    getsockopt!(get_multicast_maxtpdu, i32, ffi::ZMQ_MULTICAST_MAXTPDU);
+    getsockopt!(get_plain_password, String, ffi::ZMQ_PLAIN_PASSWORD, 255);
+    getsockopt!(get_plain_server, bool, ffi::ZMQ_PLAIN_SERVER);
+    getsockopt!(get_plain_username, String, ffi::ZMQ_PLAIN_USERNAME, 255);
+    getsockopt!(get_use_fd, i32, ffi::ZMQ_USE_FD);
+    getsockopt!(get_rate, i32, ffi::ZMQ_RATE);
+    getsockopt!(get_rcvbuf, i32, ffi::ZMQ_RCVBUF);
+    getsockopt!(get_rcvhwm, i32, ffi::ZMQ_RCVHWM);
+    getsockopt!(get_rcvmore, bool, ffi::ZMQ_RCVMORE);
+    getsockopt!(get_rcvtimeo, i32, ffi::ZMQ_RCVTIMEO);
+    getsockopt!(get_reconnect_ivl, i32, ffi::ZMQ_RECONNECT_IVL);
+    getsockopt!(get_reconnect_ivl_max, i32, ffi::ZMQ_RECONNECT_IVL_MAX);
+    getsockopt!(get_recovery_ivl, i32, ffi::ZMQ_RECOVERY_IVL);
+    getsockopt!(get_routing_id, Vec<u8>, ffi::ZMQ_ROUTING_ID, 255);
+    getsockopt!(get_sndbuf, i32, ffi::ZMQ_SNDBUF);
+    getsockopt!(get_sndhwm, i32, ffi::ZMQ_SNDHWM);
+    getsockopt!(get_sndtimeo, i32, ffi::ZMQ_SNDTIMEO);
+    getsockopt!(get_socks_proxy, String, ffi::ZMQ_SOCKS_PROXY, 255);
+    getsockopt!(get_tcp_keepalive, i32, ffi::ZMQ_TCP_KEEPALIVE);
+    getsockopt!(get_tcp_keepalive_cnt, i32, ffi::ZMQ_TCP_KEEPALIVE_CNT);
+    getsockopt!(get_tcp_keepalive_idle, i32, ffi::ZMQ_TCP_KEEPALIVE_IDLE);
+    getsockopt!(get_tcp_keepalive_intvl, i32, ffi::ZMQ_TCP_KEEPALIVE_INTVL);
+    getsockopt!(get_tcp_maxrt, i32, ffi::ZMQ_TCP_MAXRT);
+    getsockopt!(get_thread_safe, bool, ffi::ZMQ_THREAD_SAFE);
+    getsockopt!(get_tos, i32, ffi::ZMQ_TOS);
+    getsockopt!(get_type, i32, ffi::ZMQ_TYPE);
+    getsockopt!(get_zap_domain, String, ffi::ZMQ_ZAP_DOMAIN, 255);
+    // getsockopt!(get_zap_enforce_domain, bool, ffi::ZMQ_ZAP_ENFORCE_DOMAIN);
+    getsockopt!(get_vmci_buffer_size, u64, ffi::ZMQ_VMCI_BUFFER_SIZE);
+    getsockopt!(get_vmci_buffer_min_size, u64, ffi::ZMQ_VMCI_BUFFER_MIN_SIZE);
+    getsockopt!(get_vmci_buffer_max_size, u64, ffi::ZMQ_VMCI_BUFFER_MAX_SIZE);
+    getsockopt!(get_vmci_connect_timeout, i32, ffi::ZMQ_VMCI_CONNECT_TIMEOUT);
+    // getsockopt!(get_multicast_loop, bool, ffi::ZMQ_MULTICAST_LOOP);
 
     setsockopt!(set_affinity, u64, ffi::ZMQ_AFFINITY);
     setsockopt!(set_backlog, i32, ffi::ZMQ_BACKLOG);
